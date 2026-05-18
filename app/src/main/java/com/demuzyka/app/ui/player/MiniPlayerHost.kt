@@ -1,5 +1,11 @@
 package com.demuzyka.app.ui.player
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,9 +41,14 @@ import com.demuzyka.app.data.AppContainer
 @Composable
 fun MiniPlayerHost(container: AppContainer, modifier: Modifier = Modifier) {
     val now by container.musicProvider.nowPlaying.collectAsState()
-    val playing = now ?: return
 
     Box(modifier = modifier, contentAlignment = Alignment.BottomCenter) {
+        AnimatedVisibility(
+            visible = now != null,
+            enter = slideInVertically(tween(280)) { it } + fadeIn(tween(220)),
+            exit = slideOutVertically(tween(220)) { it } + fadeOut(tween(180)),
+        ) {
+            val playing = now ?: return@AnimatedVisibility
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -86,6 +97,7 @@ fun MiniPlayerHost(container: AppContainer, modifier: Modifier = Modifier) {
                     null,
                 )
             }
+        }
         }
     }
 }

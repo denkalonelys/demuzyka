@@ -1,5 +1,7 @@
 package com.demuzyka.app.ui.tabs
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -53,9 +55,14 @@ fun AppTabRow(
         ) {
             AppTab.values().forEach { tab ->
                 val selected = tab == current
-                val color =
+                val targetTextColor =
                     if (selected) MaterialTheme.colorScheme.onBackground
                     else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
+                val targetUnderline =
+                    if (selected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.primary.copy(alpha = 0f)
+                val textColor by animateColorAsState(targetTextColor, tween(220), label = "tab-text")
+                val underlineColor by animateColorAsState(targetUnderline, tween(260), label = "tab-underline")
                 Column(
                     modifier = Modifier
                         .padding(end = 28.dp)
@@ -65,7 +72,7 @@ fun AppTabRow(
                 ) {
                     Text(
                         text = tab.title,
-                        color = color,
+                        color = textColor,
                         fontSize = 22.sp,
                     )
                     Box(
@@ -74,10 +81,7 @@ fun AppTabRow(
                             .height(3.dp)
                             .width(34.dp)
                             .clip(RoundedCornerShape(2.dp))
-                            .background(
-                                if (selected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.primary.copy(alpha = 0f),
-                            ),
+                            .background(underlineColor),
                     )
                 }
             }

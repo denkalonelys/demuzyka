@@ -1,5 +1,12 @@
 package com.demuzyka.app.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -64,9 +71,28 @@ fun DeMuzykaRoot(container: AppContainer) {
         },
     ) { inner ->
         Box(Modifier.fillMaxSize().padding(inner)) {
-            when (currentTab) {
-                AppTab.Muzyka -> MusicNavHost(navController = musicNav, container = container)
-                AppTab.Poisk -> PoiskNavHost(navController = poiskNav, container = container)
+            // Slide-and-fade tab transitions. Direction depends on which tab
+            // is moving in: Muzyka enters from the left, Poisk from the right.
+            AnimatedContent(
+                targetState = currentTab,
+                transitionSpec = {
+                    val forward = targetState.ordinal > initialState.ordinal
+                    val offset: (Int) -> Int = { full -> if (forward) full else -full }
+                    val offsetReverse: (Int) -> Int = { full -> if (forward) -full else full }
+                    (
+                        fadeIn(tween(220)) +
+                        slideInHorizontally(tween(280), initialOffsetX = offset)
+                    ) togetherWith (
+                        fadeOut(tween(180)) +
+                        slideOutHorizontally(tween(280), targetOffsetX = offsetReverse)
+                    )
+                },
+                label = "tab-switch",
+            ) { tab ->
+                when (tab) {
+                    AppTab.Muzyka -> MusicNavHost(navController = musicNav, container = container)
+                    AppTab.Poisk -> PoiskNavHost(navController = poiskNav, container = container)
+                }
             }
             // The currently-playing track ribbon is rendered ABOVE the bottom
             // bar — exactly like Yandex Music. Hide it on Poisk for clarity.

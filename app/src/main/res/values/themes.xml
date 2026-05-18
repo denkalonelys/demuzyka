@@ -1,11 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Compose draws the whole UI; XML theme just sets up the splash window. -->
+    <!-- Compose draws the whole UI. -->
     <style name="Theme.DeMuzyka" parent="android:Theme.Material.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:colorBackground">@android:color/black</item>
+    </style>
+
+    <!-- Splash uses core-splashscreen so it animates the icon
+         from launcher into the app — works on Android 12+ natively and
+         is back-ported below. Icon is the launcher foreground. -->
+    <style name="Theme.DeMuzyka.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#FF6A00</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenAnimationDuration">500</item>
+        <item name="postSplashScreenTheme">@style/Theme.DeMuzyka</item>
     </style>
 </resources>

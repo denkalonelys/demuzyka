@@ -1,5 +1,11 @@
 package com.demuzyka.app.ui.music
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -91,9 +97,20 @@ private fun HomeHeader() {
     }
 }
 
-/** Gradient "wave" blob with a centred play affordance — Y.Music's hero. */
+/** Gradient "wave" blob with a centred play affordance — Y.Music's hero.
+ *  Radius slowly pulses to give the blob a "breathing" feel. */
 @Composable
 private fun WaveHero() {
+    val transition = rememberInfiniteTransition(label = "wave-pulse")
+    val radius by transition.animateFloat(
+        initialValue = 900f,
+        targetValue = 1400f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 4500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "wave-radius",
+    )
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -107,7 +124,7 @@ private fun WaveHero() {
                         DePink,
                         MaterialTheme.colorScheme.background,
                     ),
-                    radius = 1200f,
+                    radius = radius,
                 )
             ),
         contentAlignment = Alignment.Center,

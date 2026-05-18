@@ -32,5 +32,9 @@ class DefaultAppContainer(
     // ────────────────────────────────────────────────────────────────────
     override val musicProvider: MusicProvider = StubMusicProvider()
     override val waveProvider: WaveProvider = StubWaveProvider(musicProvider)
+
+    // Stub by default (works fully offline, no API key required).
+    // Swap to TmdbFilmProvider("<your-tmdb-api-key>") for a real catalog —
+    // see app/src/main/java/com/demuzyka/app/data/poisk/TmdbFilmProvider.kt
     override val filmProvider: FilmProvider = StubFilmProvider()
 }
