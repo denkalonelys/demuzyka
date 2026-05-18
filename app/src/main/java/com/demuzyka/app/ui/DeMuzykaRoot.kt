@@ -26,6 +26,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.demuzyka.app.data.AppContainer
 import com.demuzyka.app.ui.nav.BottomBar
+import com.demuzyka.app.ui.nav.Section
 import com.demuzyka.app.ui.music.MusicBooksScreen
 import com.demuzyka.app.ui.music.MusicCollectionScreen
 import com.demuzyka.app.ui.music.MusicConcertsScreen
@@ -132,3 +133,17 @@ private fun PoiskNavHost(navController: androidx.navigation.NavHostController, c
         composable(PoiskSections[3].route) { PoiskSearchScreen(container) }
     }
 }
+
+private val MusicSections = listOf(
+    Section.Music.Wave,
+    Section.Music.Concerts,
+    Section.Music.Books,
+    Section.Music.Likes,
+)
+
+private val PoiskSections = listOf(
+    Section.Poisk.Home,
+    Section.Poisk.Media,
+    Section.Poisk.My,
+    Section.Poisk.Search,
+)
