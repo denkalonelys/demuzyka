@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ДеМузыка</string>
+    <string name="tab_muzyka">ДеМузыка</string>
+    <string name="tab_poisk">ДеПоиск</string>
+
+    <!-- Music tab bottom-bar labels -->
+    <string name="music_wave">Музыка</string>
+    <string name="music_concerts">Концерты</string>
+    <string name="music_books">Книги</string>
+    <string name="music_likes">Лайки</string>
+
+    <!-- Poisk tab bottom-bar labels -->
+    <string name="poisk_home">Главное</string>
+    <string name="poisk_media">Медиа</string>
+    <string name="poisk_my">Моё</string>
+    <string name="poisk_search">Поиск</string>
+</resources>
