@@ -26,14 +26,17 @@ class StubMusicProvider : MusicProvider {
 
     override val likes: Flow<List<Track>> = likedTracks.asStateFlow()
 
-    override val nowPlaying: MutableStateFlow<NowPlaying?> = MutableStateFlow(
-        NowPlaying(
-            track = seedTracks[0],
-            positionSec = 44,
-            isPlaying = true,
-            source = "wave",
-        )
-    )
+    // Start empty — mini-player slides up only after the user picks a track.
+    override val nowPlaying: MutableStateFlow<NowPlaying?> = MutableStateFlow(null)
+
+    fun play(track: Track) {
+        nowPlaying.value = NowPlaying(track = track, positionSec = 0, isPlaying = true, source = "wave")
+    }
+
+    fun toggleNow() {
+        val now = nowPlaying.value ?: return
+        nowPlaying.value = now.copy(isPlaying = !now.isPlaying)
+    }
 
     override fun homeRows(): Flow<List<HomeRow>> = MutableStateFlow(
         listOf(
