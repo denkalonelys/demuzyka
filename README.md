@@ -114,10 +114,16 @@ adb disconnect 192.168.1.50:5555
 
 ---
 
-## Подписанный Release APK
+## Release APK
 
-Debug APK подписан тестовым ключом и НЕ годится для распространения и
-магазина. Для release нужен свой keystore.
+> По умолчанию **release-сборка подписывается debug-ключом** — это сделано
+> намеренно, чтобы `./gradlew assembleRelease` сразу выдавал ставимый APK
+> без ручного создания keystore. **Такой APK НЕ годится для Google Play
+> и публичной раздачи** — он подписан общим debug-сертификатом и не
+> уникален для вашего проекта.
+>
+> Для распространения (Play Market, RuStore, прямые ссылки) собирайте
+> с настоящим keystore — см. шаги ниже.
 
 ### 1) Один раз — сгенерируйте keystore
 
@@ -281,13 +287,32 @@ interface WaveProvider {
 | `toggleBookmark(filmId)`   | Закладка вкл/выкл.                                     |
 | `resolveStream(filmId)`    | Получить стримируемый URL под Play. Тяжёлая операция.  |
 
-**Куда подключать Lordfilm / Kinopoisk API / собственный каталог:**
-напишите класс типа `LordfilmFilmProvider : FilmProvider`, в `resolveStream`
-дергаете парсер HLS-ссылки, в `homeRows()` — главную сетку.
+**Готовый пример — TMDB:**
+В репо лежит `TmdbFilmProvider` — рабочая реализация поверх
+[The Movie Database](https://www.themoviedb.org/) API. Бесплатный ключ
+получаете на https://www.themoviedb.org/settings/api , после чего в
+`AppContainer.kt` меняете одну строку:
 
-> Никаких готовых ссылок на Lordfilm / Kinopoisk в репо нет — это
-> намеренно. Подключайте свой источник; правовые вопросы — на вашей
-> стороне.
+```kotlin
+override val filmProvider: FilmProvider =
+    TmdbFilmProvider(apiKey = "ВАШ_TMDB_КЛЮЧ")
+```
+
+После этого «ДеПоиск» сразу заполнится реальными постерами и рейтингами
+для российского региона (`language = ru-RU`, `region = RU`) — «Сейчас в
+кино», «Топ-250», «Сериалы», поиск.
+
+**Альтернативы:** `KinopoiskUnofficialFilmProvider` (структурно почти
+идентичный, ставите `https://kinopoiskapiunofficial.tech/api/v2.2/films`),
+свой каталог через REST, всё что угодно — главное реализовать
+`FilmProvider`.
+
+**Lordfilm / пиратские источники в репо НЕ интегрированы намеренно** —
+встраивание пиратского контента ведёт к удалению из Google Play,
+требованиям правообладателей и риску 146 УК РФ. Если действительно
+нужен такой источник — пишите парсер сами, имплементируете
+`FilmProvider`, ставите в `AppContainer`. Ответственность за каталог
+остаётся на вашей стороне.
 
 ### 4. Реальный плеер
 

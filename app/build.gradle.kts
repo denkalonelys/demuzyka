@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    kotlin("plugin.serialization") version "2.0.20"
 }
 
 android {
@@ -22,13 +23,17 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            // We deliberately don't enable shrinkResources/R8 yet — the
-            // scaffold ships intentionally large so it's obvious where to
-            // plug providers in. Turn on once data layer is wired.
+            // Scaffold ships unobfuscated so it's obvious where to plug
+            // providers in. Turn on once the data layer is wired.
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Sign release with the auto-generated debug key by default so
+            // `./gradlew assembleRelease` produces an installable APK without
+            // requiring a keystore. Replace this with a real `signingConfigs`
+            // block before publishing to the Play Store (see README).
+            signingConfig = signingConfigs.getByName("debug")
         }
         debug {
             applicationIdSuffix = ".debug"
@@ -66,10 +71,16 @@ android {
 dependencies {
     // ── Core AndroidX ──
     implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
+
+    // ── Networking (used by the optional TMDB provider example) ──
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.2")
+    implementation("io.coil-kt:coil-svg:2.7.0")
 
     // ── Compose BOM keeps every compose-* lib in sync ──
     implementation(platform("androidx.compose:compose-bom:2024.09.02"))

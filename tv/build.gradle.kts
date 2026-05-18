@@ -22,6 +22,8 @@ android {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
             )
+            // See app/build.gradle.kts — debug-signed release for scaffolding.
+            signingConfig = signingConfigs.getByName("debug")
         }
         debug {
             applicationIdSuffix = ".debug"
