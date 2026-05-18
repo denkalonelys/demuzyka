@@ -13,11 +13,12 @@ internal val DeYellowDim = Color(0xFFB89200)
 internal val DePink = Color(0xFFFF2D7F)          // wave + concerts banner
 internal val DeMagenta = Color(0xFFB200B2)
 
+// Pure-black palette matching Yandex.Music / Kinopoisk reference designs.
 internal val DeBlack = Color(0xFF000000)
-internal val DeNearBlack = Color(0xFF0A0A0B)
-internal val DeSurface = Color(0xFF141416)
-internal val DeSurfaceElev = Color(0xFF1B1B1F)
-internal val DeOutline = Color(0xFF2A2A2E)
+internal val DeNearBlack = Color(0xFF000000)
+internal val DeSurface = Color(0xFF0A0A0A)
+internal val DeSurfaceElev = Color(0xFF121212)
+internal val DeOutline = Color(0xFF1F1F1F)
 
 internal val DeOnBackground = Color(0xFFFFFFFF)
 internal val DeOnBackgroundDim = Color(0xFFAAAAAE)

@@ -1,6 +1,7 @@
 package com.demuzyka.app.ui.poisk
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -112,9 +113,10 @@ private fun SearchBar(query: String, onChange: (String) -> Unit) {
             )
             Box(
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(28.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface),
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clickable { /* TODO: filters */ },
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(Icons.Outlined.Tune, null,
@@ -207,6 +209,7 @@ private fun CategoryPill(label: String) {
         modifier = Modifier
             .clip(RoundedCornerShape(50))
             .background(MaterialTheme.colorScheme.surface)
+            .clickable { /* TODO: open category */ }
             .padding(horizontal = 24.dp, vertical = 14.dp),
     ) {
         Text(label, style = MaterialTheme.typography.titleMedium)
@@ -218,6 +221,7 @@ private fun SearchResultRow(f: Film) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { /* TODO: open film */ }
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

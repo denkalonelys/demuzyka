@@ -7,6 +7,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -56,14 +58,24 @@ import kotlinx.coroutines.flow.flowOf
 @Composable
 fun MusicHomeScreen(container: AppContainer) {
     val rows by remember { container.musicProvider.homeRows() }.collectAsState(initial = emptyList())
+    val provider = container.musicProvider as? com.demuzyka.app.data.music.StubMusicProvider
+    val onPlayTrack: (com.demuzyka.app.data.music.Track) -> Unit = { track ->
+        provider?.play(track)
+    }
+    val onPlayMood: () -> Unit = {
+        val firstTrack = rows.firstNotNullOfOrNull { row ->
+            (row.items.firstOrNull { it is HomeRow.Item.TrackItem } as? HomeRow.Item.TrackItem)?.track
+        } ?: com.demuzyka.app.data.music.Track("wave", "Моя волна", "Радио", null, 0)
+        provider?.play(firstTrack)
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 120.dp),
     ) {
         item { HomeHeader() }
-        item { WaveHero() }
-        items(rows) { row -> HomeRowSection(row) }
+        item { WaveHero(onClick = onPlayMood) }
+        items(rows) { row -> HomeRowSection(row, onPlayTrack = onPlayTrack) }
     }
 }
 
@@ -93,14 +105,16 @@ private fun HomeHeader() {
                 .weight(1f),
             style = MaterialTheme.typography.titleLarge,
         )
-        Icon(Icons.Outlined.Search, contentDescription = "Поиск")
+        IconButton(onClick = { /* TODO: open search */ }) {
+            Icon(Icons.Outlined.Search, contentDescription = "Поиск")
+        }
     }
 }
 
 /** Gradient "wave" blob with a centred play affordance — Y.Music's hero.
  *  Radius slowly pulses to give the blob a "breathing" feel. */
 @Composable
-private fun WaveHero() {
+private fun WaveHero(onClick: () -> Unit) {
     val transition = rememberInfiniteTransition(label = "wave-pulse")
     val radius by transition.animateFloat(
         initialValue = 900f,
@@ -117,6 +131,7 @@ private fun WaveHero() {
             .padding(horizontal = 16.dp, vertical = 12.dp)
             .aspectRatio(0.95f)
             .clip(RoundedCornerShape(24.dp))
+            .clickable(onClick = onClick)
             .background(
                 Brush.radialGradient(
                     colors = listOf(
@@ -144,34 +159,17 @@ private fun WaveHero() {
                     style = MaterialTheme.typography.displayLarge,
                 )
             }
-            // Mood chips (Любимое × — exactly like the screenshot).
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                MoodChip(label = "Фильтры", isAction = true)
-                MoodChip(label = "Любимое ×")
-            }
+            Text(
+                "Слушайте треки под ваше настроение",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            )
         }
     }
 }
 
 @Composable
-private fun MoodChip(label: String, isAction: Boolean = false) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = if (isAction) MaterialTheme.colorScheme.surfaceVariant
-        else MaterialTheme.colorScheme.background.copy(alpha = 0.4f),
-        modifier = Modifier.height(36.dp),
-    ) {
-        Box(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(label, style = MaterialTheme.typography.labelLarge)
-        }
-    }
-}
-
-@Composable
-private fun HomeRowSection(row: HomeRow) {
+private fun HomeRowSection(row: HomeRow, onPlayTrack: (com.demuzyka.app.data.music.Track) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
         Text(
             row.title,
@@ -186,7 +184,7 @@ private fun HomeRowSection(row: HomeRow) {
                 when (item) {
                     is HomeRow.Item.MoodItem -> MoodCard(item)
                     is HomeRow.Item.PlaylistItem -> PlaylistCard(item)
-                    is HomeRow.Item.TrackItem -> TrackTile(item)
+                    is HomeRow.Item.TrackItem -> TrackTile(item, onClick = { onPlayTrack(item.track) })
                     is HomeRow.Item.BookItem -> BookCard(item)
                 }
             }
@@ -200,6 +198,7 @@ private fun MoodCard(item: HomeRow.Item.MoodItem) {
         modifier = Modifier
             .size(160.dp)
             .clip(RoundedCornerShape(20.dp))
+            .clickable { /* TODO: open mood */ }
             .background(
                 Brush.linearGradient(
                     when (item.moodId) {
@@ -223,7 +222,12 @@ private fun MoodCard(item: HomeRow.Item.MoodItem) {
 
 @Composable
 private fun PlaylistCard(item: HomeRow.Item.PlaylistItem) {
-    Column(modifier = Modifier.width(160.dp)) {
+    Column(
+        modifier = Modifier
+            .width(160.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { /* TODO: open playlist */ }
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -241,8 +245,13 @@ private fun PlaylistCard(item: HomeRow.Item.PlaylistItem) {
 }
 
 @Composable
-private fun TrackTile(item: HomeRow.Item.TrackItem) {
-    Row(modifier = Modifier.width(280.dp)) {
+private fun TrackTile(item: HomeRow.Item.TrackItem, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .width(280.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick),
+    ) {
         Box(
             modifier = Modifier
                 .size(56.dp)

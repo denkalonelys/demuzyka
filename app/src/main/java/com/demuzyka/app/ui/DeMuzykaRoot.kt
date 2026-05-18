@@ -1,29 +1,36 @@
 package com.demuzyka.app.ui
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.demuzyka.app.data.AppContainer
 import com.demuzyka.app.ui.nav.BottomBar
-import com.demuzyka.app.ui.nav.Section
-import com.demuzyka.app.ui.music.MusicHomeScreen
+import com.demuzyka.app.ui.music.MusicBooksScreen
 import com.demuzyka.app.ui.music.MusicCollectionScreen
 import com.demuzyka.app.ui.music.MusicConcertsScreen
-import com.demuzyka.app.ui.music.MusicBooksScreen
+import com.demuzyka.app.ui.music.MusicHomeScreen
+import com.demuzyka.app.ui.player.FullPlayerSheet
 import com.demuzyka.app.ui.player.MiniPlayerHost
 import com.demuzyka.app.ui.poisk.PoiskHomeScreen
 import com.demuzyka.app.ui.poisk.PoiskMyScreen
@@ -34,45 +41,44 @@ import com.demuzyka.app.ui.tabs.AppTabRow
 /**
  * Root scaffold.
  *
- * Top: two big tabs — «ДеМузыка» / «ДеПоиск» (same app, two product
- * experiences just like Yandex.Plus combines Music + Kinopoisk).
- * Each tab keeps its own bottom nav state so switching back to a tab
- * restores the section the user left.
+ * Top: two big tabs — «ДеМузыка» / «ДеПоиск».
+ * Each tab keeps its own nav stack so switching back restores state.
+ * Mini-player lives inside Scaffold.bottomBar on the Muzyka tab, directly
+ * above the BottomBar — like Yandex.Music. Tap mini-player to open the
+ * full-screen now-playing sheet (slides up from the bottom).
  */
 @Composable
 fun DeMuzykaRoot(container: AppContainer) {
     val musicNav = rememberNavController()
     val poiskNav = rememberNavController()
 
-    val tabState = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(AppTab.Muzyka) }
-    val currentTab = tabState.value
+    var currentTab by remember { mutableStateOf(AppTab.Muzyka) }
+    var fullPlayerOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             AppTabRow(
                 current = currentTab,
-                onSelect = { tabState.value = it },
+                onSelect = { currentTab = it },
             )
         },
         bottomBar = {
-            // Each tab gets its OWN bottom bar — Kinopoisk's "Главное / Медиа /
-            // Моё / Поиск" vs Yandex Music's "Музыка / Концерты / Книги / Лайки".
-            when (currentTab) {
-                AppTab.Muzyka -> BottomBar(
-                    navController = musicNav,
-                    sections = MusicSections,
-                )
-                AppTab.Poisk -> BottomBar(
-                    navController = poiskNav,
-                    sections = PoiskSections,
-                )
+            Column {
+                if (currentTab == AppTab.Muzyka) {
+                    MiniPlayerHost(
+                        container = container,
+                        onExpand = { fullPlayerOpen = true },
+                    )
+                }
+                when (currentTab) {
+                    AppTab.Muzyka -> BottomBar(navController = musicNav, sections = MusicSections)
+                    AppTab.Poisk -> BottomBar(navController = poiskNav, sections = PoiskSections)
+                }
             }
         },
     ) { inner ->
         Box(Modifier.fillMaxSize().padding(inner)) {
-            // Slide-and-fade tab transitions. Direction depends on which tab
-            // is moving in: Muzyka enters from the left, Poisk from the right.
             AnimatedContent(
                 targetState = currentTab,
                 transitionSpec = {
@@ -81,11 +87,11 @@ fun DeMuzykaRoot(container: AppContainer) {
                     val offsetReverse: (Int) -> Int = { full -> if (forward) -full else full }
                     (
                         fadeIn(tween(220)) +
-                        slideInHorizontally(tween(280), initialOffsetX = offset)
-                    ) togetherWith (
+                            slideInHorizontally(tween(280), initialOffsetX = offset)
+                        ) togetherWith (
                         fadeOut(tween(180)) +
-                        slideOutHorizontally(tween(280), targetOffsetX = offsetReverse)
-                    )
+                            slideOutHorizontally(tween(280), targetOffsetX = offsetReverse)
+                        )
                 },
                 label = "tab-switch",
             ) { tab ->
@@ -94,15 +100,16 @@ fun DeMuzykaRoot(container: AppContainer) {
                     AppTab.Poisk -> PoiskNavHost(navController = poiskNav, container = container)
                 }
             }
-            // The currently-playing track ribbon is rendered ABOVE the bottom
-            // bar — exactly like Yandex Music. Hide it on Poisk for clarity.
-            if (currentTab == AppTab.Muzyka) {
-                MiniPlayerHost(
-                    container = container,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
         }
+    }
+
+    // Full-screen player sheet — overlays the whole scaffold.
+    AnimatedVisibility(
+        visible = fullPlayerOpen,
+        enter = slideInVertically(tween(320)) { it } + fadeIn(tween(220)),
+        exit = slideOutVertically(tween(280)) { it } + fadeOut(tween(180)),
+    ) {
+        FullPlayerSheet(container = container, onDismiss = { fullPlayerOpen = false })
     }
 }
 
@@ -120,23 +127,8 @@ private fun MusicNavHost(navController: androidx.navigation.NavHostController, c
 private fun PoiskNavHost(navController: androidx.navigation.NavHostController, container: AppContainer) {
     NavHost(navController = navController, startDestination = PoiskSections.first().route) {
         composable(PoiskSections[0].route) { PoiskHomeScreen(container) }
-        // "Медиа" reuses the home grid for now — wire to live channels later.
-        composable(PoiskSections[1].route) { PoiskHomeScreen(container) }
+        composable(PoiskSections[1].route) { PoiskHomeScreen(container) } // media reuses home for now
         composable(PoiskSections[2].route) { PoiskMyScreen(container) }
         composable(PoiskSections[3].route) { PoiskSearchScreen(container) }
     }
 }
-
-private val MusicSections = listOf(
-    Section.Music.Wave,
-    Section.Music.Concerts,
-    Section.Music.Books,
-    Section.Music.Likes,
-)
-
-private val PoiskSections = listOf(
-    Section.Poisk.Home,
-    Section.Poisk.Media,
-    Section.Poisk.My,
-    Section.Poisk.Search,
-)
