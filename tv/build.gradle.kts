@@ -12,8 +12,8 @@ android {
         applicationId = "com.demuzyka.tv"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 3
+        versionName = "0.3.0"
     }
 
     buildTypes {
@@ -55,7 +55,12 @@ dependencies {
 
     implementation(platform("androidx.compose:compose-bom:2024.09.02"))
     implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.compose.animation:animation")
 
     // TV-specific surfaces (Carousel, ImmersiveList, NavigationDrawer, …).
     implementation("androidx.tv:tv-material:1.0.0")

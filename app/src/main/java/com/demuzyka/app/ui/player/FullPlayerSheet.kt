@@ -12,30 +12,34 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.QueueMusic
+import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Shuffle
 import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.SkipPrevious
-import androidx.compose.material.icons.outlined.ThumbDown
+import androidx.compose.material.icons.outlined.ThumbDownAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -45,16 +49,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.demuzyka.app.data.AppContainer
 import com.demuzyka.app.data.music.StubMusicProvider
+import com.demuzyka.app.ui.parts.CoverArt
+import com.demuzyka.app.ui.parts.MeshHero
+import com.demuzyka.app.ui.theme.coverPaletteFor
 
 /**
  * Full-screen now-playing sheet — slides up from the mini-player.
- * Pure black background, oversized cover with breathing radial glow,
- * play / next / prev / like / dislike / shuffle / close buttons.
+ *
+ * Visual layers (back→front):
+ *   • pure black wash
+ *   • animated mesh-gradient backdrop tinted by the current track's
+ *     procedural cover palette
+ *   • huge square cover
+ *   • title / artist / progress bar
+ *   • transport (prev / play-pause / next) + secondary row (shuffle,
+ *     dislike, like, repeat) + bottom (queue, source label, more).
  */
 @Composable
 fun FullPlayerSheet(container: AppContainer, onDismiss: () -> Unit) {
@@ -64,35 +80,38 @@ fun FullPlayerSheet(container: AppContainer, onDismiss: () -> Unit) {
     }
 
     val stub = container.musicProvider as? StubMusicProvider
-    val transition = rememberInfiniteTransition(label = "player-bg")
-    val radius by transition.animateFloat(
-        initialValue = 700f, targetValue = 1300f,
-        animationSpec = infiniteRepeatable(tween(4500, easing = LinearEasing), RepeatMode.Reverse),
-        label = "player-bg-radius",
+    val palette = coverPaletteFor(playing.track.id)
+
+    // Subtle cover scale on play/pause.
+    val tx = rememberInfiniteTransition(label = "fp-bg")
+    val pulse by tx.animateFloat(
+        initialValue = 0.97f, targetValue = 1.03f,
+        animationSpec = infiniteRepeatable(
+            tween(2400, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "fp-cover-pulse",
     )
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(
-                        lerp(Color(0xFFFF2D7F), Color.Black, 0.55f),
-                        Color.Black,
-                    ),
-                    radius = radius,
-                )
-            ),
-    ) {
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        // Backdrop — soft cover-tinted mesh that fills the whole sheet.
+        MeshHero(
+            modifier = Modifier.fillMaxSize(),
+            a = palette.start.copy(alpha = 0.85f),
+            b = palette.mid.copy(alpha = 0.7f),
+            c = palette.end.copy(alpha = 0.5f),
+        )
+
         val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = topInset),
+                .padding(top = topInset, bottom = bottomInset),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Top bar
+            // Top bar — close + source + more.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -100,93 +119,128 @@ fun FullPlayerSheet(container: AppContainer, onDismiss: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Outlined.KeyboardArrowDown, null, modifier = Modifier.size(28.dp))
+                    Icon(
+                        Icons.Outlined.KeyboardArrowDown,
+                        null,
+                        modifier = Modifier.size(30.dp),
+                        tint = Color.White,
+                    )
                 }
                 Column(
                     modifier = Modifier.weight(1f),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text("ВОЛНА", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.65f))
-                    Text(playing.source.uppercase(), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f))
+                    Text(
+                        "СЕЙЧАС ИГРАЕТ",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.65f),
+                        letterSpacing = 1.5.sp,
+                    )
+                    Text(
+                        playing.source.uppercase(),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
+                    )
                 }
                 IconButton(onClick = { /* TODO: menu */ }) {
-                    Icon(Icons.Outlined.MoreHoriz, null, modifier = Modifier.size(24.dp))
+                    Icon(
+                        Icons.Outlined.MoreHoriz,
+                        null,
+                        modifier = Modifier.size(24.dp),
+                        tint = Color.White,
+                    )
                 }
             }
 
-            // Cover artwork
+            Spacer(Modifier.height(8.dp))
+
+            // Cover artwork — huge, with subtle scale pulse while playing.
             Box(
                 modifier = Modifier
-                    .padding(horizontal = 36.dp, vertical = 24.dp)
+                    .padding(horizontal = 32.dp)
                     .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(
-                        Brush.linearGradient(
-                            listOf(Color(0xFFFF6A00), Color(0xFFB200B2), Color(0xFFFF2D7F))
-                        )
-                    ),
-            )
+                    .aspectRatio(1f),
+                contentAlignment = Alignment.Center,
+            ) {
+                val scale = if (playing.isPlaying) pulse else 1f
+                CoverArt(
+                    id = playing.track.id,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { scaleX = scale; scaleY = scale },
+                    corner = 24.dp,
+                )
+            }
+
+            Spacer(Modifier.height(28.dp))
 
             // Title + artist
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp),
+                    .padding(horizontal = 36.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     playing.track.title,
-                    style = MaterialTheme.typography.headlineSmall,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = (-0.5).sp,
                     color = Color.White,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                 )
                 Text(
                     playing.track.artist,
-                    style = MaterialTheme.typography.bodyLarge,
+                    fontSize = 15.sp,
                     color = Color.White.copy(alpha = 0.7f),
                     modifier = Modifier.padding(top = 6.dp),
                 )
             }
 
-            // Progress
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp, vertical = 24.dp)
-                    .height(3.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(Color.White.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.CenterStart,
+            Spacer(Modifier.height(20.dp))
+
+            // Progress track + time labels
+            Column(
+                modifier = Modifier.padding(horizontal = 36.dp).fillMaxWidth(),
             ) {
-                val pct = if (playing.track.durationSec > 0)
-                    (playing.positionSec.toFloat() / playing.track.durationSec).coerceIn(0f, 1f) else 0.2f
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(pct)
-                        .height(3.dp)
-                        .background(Color.White)
+                ProgressRail(
+                    positionSec = playing.positionSec,
+                    durationSec = playing.track.durationSec,
                 )
+                Spacer(Modifier.height(6.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        formatTime(playing.positionSec),
+                        fontSize = 11.sp,
+                        color = Color.White.copy(alpha = 0.6f),
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        "-${formatTime((playing.track.durationSec - playing.positionSec).coerceAtLeast(0))}",
+                        fontSize = 11.sp,
+                        color = Color.White.copy(alpha = 0.6f),
+                    )
+                }
             }
 
-            // Transport
+            Spacer(Modifier.height(20.dp))
+
+            // Transport — prev / big play / next.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp),
+                    .padding(horizontal = 24.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                IconButton(onClick = { /* TODO: dislike */ }) {
-                    Icon(Icons.Outlined.ThumbDown, null, tint = Color.White, modifier = Modifier.size(28.dp))
-                }
-                IconButton(onClick = { /* TODO: prev */ }) {
-                    Icon(Icons.Outlined.SkipPrevious, null, tint = Color.White, modifier = Modifier.size(40.dp))
-                }
+                CircleIcon(Icons.Outlined.ThumbDownAlt, size = 26.dp) { /* TODO: dislike */ }
+                CircleIcon(Icons.Outlined.SkipPrevious, size = 38.dp) { /* TODO: prev */ }
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(78.dp)
                         .clip(CircleShape)
                         .background(Color.White)
                         .clickable { stub?.toggleNow() },
@@ -196,37 +250,71 @@ fun FullPlayerSheet(container: AppContainer, onDismiss: () -> Unit) {
                         if (playing.isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
                         null,
                         tint = Color.Black,
-                        modifier = Modifier.size(40.dp),
+                        modifier = Modifier.size(42.dp),
                     )
                 }
-                IconButton(onClick = { /* TODO: next */ }) {
-                    Icon(Icons.Outlined.SkipNext, null, tint = Color.White, modifier = Modifier.size(40.dp))
-                }
-                IconButton(onClick = { /* TODO: like */ }) {
-                    Icon(Icons.Outlined.Favorite, null, tint = Color.White, modifier = Modifier.size(28.dp))
-                }
+                CircleIcon(Icons.Outlined.SkipNext, size = 38.dp) { /* TODO: next */ }
+                CircleIcon(Icons.Outlined.FavoriteBorder, size = 26.dp) { /* TODO: like */ }
             }
 
-            Box(modifier = Modifier.weight(1f))
+            Spacer(Modifier.weight(1f))
 
-            // Bottom shuffle + share row
+            // Secondary row — shuffle, queue, source.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp, vertical = 16.dp),
+                    .padding(horizontal = 24.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = { /* TODO: shuffle */ }) {
-                    Icon(Icons.Outlined.Shuffle, null, tint = Color.White.copy(alpha = 0.7f))
-                }
+                CircleIcon(Icons.Outlined.Shuffle, size = 22.dp, alpha = 0.75f) { /* TODO: shuffle */ }
                 Text(
                     "Слушаете в ДеМузыке",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.4f),
+                    fontSize = 11.sp,
+                    color = Color.White.copy(alpha = 0.5f),
                 )
-                Box(modifier = Modifier.size(24.dp))
+                CircleIcon(Icons.Outlined.QueueMusic, size = 22.dp, alpha = 0.75f) { /* TODO: queue */ }
             }
         }
     }
+}
+
+@Composable
+private fun ProgressRail(positionSec: Int, durationSec: Int) {
+    val pct = if (durationSec > 0)
+        (positionSec.toFloat() / durationSec).coerceIn(0f, 1f)
+    else 0.15f
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(3.dp)
+            .clip(RoundedCornerShape(2.dp))
+            .background(Color.White.copy(alpha = 0.15f)),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(pct)
+                .height(3.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(Color.White),
+        )
+    }
+}
+
+@Composable
+private fun CircleIcon(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    size: androidx.compose.ui.unit.Dp,
+    alpha: Float = 1f,
+    onClick: () -> Unit,
+) {
+    IconButton(onClick = onClick) {
+        Icon(icon, null, tint = Color.White.copy(alpha = alpha), modifier = Modifier.size(size))
+    }
+}
+
+private fun formatTime(sec: Int): String {
+    val s = sec.coerceAtLeast(0)
+    return "%d:%02d".format(s / 60, s % 60)
 }

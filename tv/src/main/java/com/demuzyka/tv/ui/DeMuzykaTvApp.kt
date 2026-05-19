@@ -1,5 +1,12 @@
 package com.demuzyka.tv.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
@@ -38,24 +46,28 @@ fun DeMuzykaTvApp() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(Color.Black),
     ) {
         Row(
             modifier = Modifier.padding(start = 56.dp, top = 32.dp, end = 56.dp, bottom = 16.dp),
         ) {
             TvTab.values().forEach { tab ->
                 val isActive = tab == selected
+                val activeAccent = when (tab) {
+                    TvTab.Muzyka -> MaterialTheme.colorScheme.secondary
+                    TvTab.Poisk -> MaterialTheme.colorScheme.primary
+                }
                 Button(
                     onClick = { selected = tab },
                     colors = if (isActive)
                         ButtonDefaults.colors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            containerColor = activeAccent,
+                            contentColor = Color.Black,
                         )
                     else
                         ButtonDefaults.colors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.onSurface,
+                            containerColor = Color(0xFF121212),
+                            contentColor = Color.White,
                         ),
                     shape = ButtonDefaults.shape(shape = RoundedCornerShape(50)),
                     modifier = Modifier.height(56.dp),
@@ -65,10 +77,28 @@ fun DeMuzykaTvApp() {
                 Spacer(Modifier.width(16.dp))
             }
         }
-        Box(Modifier.weight(1f)) {
-            when (selected) {
-                TvTab.Muzyka -> MusicHomeTvScreen()
-                TvTab.Poisk -> PoiskHomeTvScreen()
+        Box(modifier = Modifier
+            .weight(1f)
+            .padding(horizontal = 56.dp)) {
+            AnimatedContent(
+                targetState = selected,
+                transitionSpec = {
+                    val forward = targetState.ordinal > initialState.ordinal
+                    val width = 240
+                    if (forward) {
+                        (slideInHorizontally { width } + fadeIn(animationSpec = androidx.compose.animation.core.tween(320))) togetherWith
+                            (slideOutHorizontally { -width } + fadeOut(animationSpec = androidx.compose.animation.core.tween(220)))
+                    } else {
+                        (slideInHorizontally { -width } + fadeIn(animationSpec = androidx.compose.animation.core.tween(320))) togetherWith
+                            (slideOutHorizontally { width } + fadeOut(animationSpec = androidx.compose.animation.core.tween(220)))
+                    }
+                },
+                label = "tv-tab",
+            ) { tab ->
+                when (tab) {
+                    TvTab.Muzyka -> MusicHomeTvScreen()
+                    TvTab.Poisk -> PoiskHomeTvScreen()
+                }
             }
         }
     }

@@ -8,8 +8,9 @@ import kotlinx.coroutines.flow.asStateFlow
  * Demo provider used by previews & by the running app until you wire a real
  * music backend. **Never touches the network** — all data is hard-coded.
  *
- * Cover URLs intentionally point at generic CDN-hosted placeholders so
- * Coil can render something even on an emulator without your CDN.
+ * Cover URLs are intentionally null so the UI falls back to the procedural
+ * `CoverArt` gradient.  Once your provider returns real `coverUrl`s, swap
+ * the placeholder for a Coil `AsyncImage`.
  */
 class StubMusicProvider : MusicProvider {
 
@@ -18,8 +19,24 @@ class StubMusicProvider : MusicProvider {
         Track("t2", "Товарищ песня", "Михаил Гаврилов", null, 188),
         Track("t3", "Твои слезы (Sped Up)", "Azzi", null, 142),
         Track("t4", "Я хотел чтобы ты горела", "vovi", null, 174),
-        Track("t5", "Ночь и день", "morphy", null, 203),
+        Track("t5", "Ночь и день", "morphy", null, 203, isLiked = true),
         Track("t6", "Силуэты", "ROCKET, elya", null, 198),
+        Track("t7", "Эфир", "Дора", null, 165, isLiked = true),
+        Track("t8", "Sayonara детка", "MORGENSHTERN", null, 184),
+        Track("t9", "Зима в сердце", "Скриптонит", null, 220, isLiked = true),
+        Track("t10", "Свет", "Хаски", null, 191),
+        Track("t11", "Полнолуние", "INSTASAMKA", null, 156),
+        Track("t12", "Эверест", "LITTLE BIG", null, 199),
+    )
+
+    private val playlists = listOf(
+        Playlist("p1", "vovi · КИССКОЛД", null, seedTracks.take(6)),
+        Playlist("p2", "Тренды недели", null, seedTracks.drop(3).take(6)),
+        Playlist("p3", "Лоу-фай для кода", null, seedTracks.drop(2).take(6)),
+        Playlist("p4", "Русский рэп 2026", null, seedTracks.shuffled().take(8)),
+        Playlist("p5", "Меланхолия", null, seedTracks.drop(4)),
+        Playlist("p6", "Поп без ботокса", null, seedTracks.take(8)),
+        Playlist("p7", "Под кофе", null, seedTracks.drop(5).take(6)),
     )
 
     private val likedTracks = MutableStateFlow(seedTracks.filter { it.isLiked })
@@ -30,7 +47,7 @@ class StubMusicProvider : MusicProvider {
     override val nowPlaying: MutableStateFlow<NowPlaying?> = MutableStateFlow(null)
 
     fun play(track: Track) {
-        nowPlaying.value = NowPlaying(track = track, positionSec = 0, isPlaying = true, source = "wave")
+        nowPlaying.value = NowPlaying(track = track, positionSec = 0, isPlaying = true, source = "Моя волна")
     }
 
     fun toggleNow() {
@@ -49,16 +66,24 @@ class StubMusicProvider : MusicProvider {
                     HomeRow.Item.MoodItem("workout", "Бодрое", null),
                     HomeRow.Item.MoodItem("focus", "Фокус", null),
                     HomeRow.Item.MoodItem("party", "Танцевальное", null),
+                    HomeRow.Item.MoodItem("evening", "Вечернее", null),
+                    HomeRow.Item.MoodItem("road", "В дорогу", null),
                 ),
             ),
             HomeRow(
                 title = "Для вас",
                 kind = HomeRow.Kind.Playlists,
-                items = listOf(
-                    HomeRow.Item.PlaylistItem(Playlist("p1", "vovi · КИССКОЛД", null, seedTracks)),
-                    HomeRow.Item.PlaylistItem(Playlist("p2", "Тренды", null, seedTracks)),
-                    HomeRow.Item.PlaylistItem(Playlist("p3", "Лоу-фай для кода", null, seedTracks)),
-                ),
+                items = playlists.take(4).map { HomeRow.Item.PlaylistItem(it) },
+            ),
+            HomeRow(
+                title = "Новые релизы",
+                kind = HomeRow.Kind.Tracks,
+                items = seedTracks.drop(2).take(6).map { HomeRow.Item.TrackItem(it) },
+            ),
+            HomeRow(
+                title = "Шеф рекомендует",
+                kind = HomeRow.Kind.Playlists,
+                items = playlists.drop(3).map { HomeRow.Item.PlaylistItem(it) },
             ),
             HomeRow(
                 title = "Мне нравится",
