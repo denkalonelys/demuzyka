@@ -11,9 +11,9 @@ private val Dark = darkColorScheme(
     secondary = Color(0xFFFFCC00),
     background = Color.Black,
     onBackground = Color.White,
-    surface = Color(0xFF141416),
+    surface = Color(0xFF0A0A0A),
     onSurface = Color.White,
-    surfaceVariant = Color(0xFF1B1B1F),
+    surfaceVariant = Color(0xFF121212),
 )
 
 @Composable
